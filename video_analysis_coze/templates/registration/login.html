@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}登录{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">用户登录</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        用户名或密码错误，请重新输入。
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">用户名</label>
+                        <input type="text" name="username" id="id_username" class="form-control" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label">密码</label>
+                        <input type="password" name="password" id="id_password" class="form-control" required>
+                    </div>
+                    
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary">登录</button>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p>还没有账号？ <a href="{% url 'register' %}">立即注册</a></p>
+                    </div>
+                    
+                    <!-- 在登录后重定向回原来的页面 -->
+                    <input type="hidden" name="next" value="{{ next }}">
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

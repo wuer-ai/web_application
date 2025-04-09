@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}视频解析结果{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">视频解析结果</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        {% if result.cover %}
+                        <img src="{{ result.cover }}" alt="视频封面" class="img-fluid rounded mb-3">
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <h5>{{ result.title }}</h5>
+                        <hr>
+                        <p><strong>原始链接：</strong> <a href="{{ video_url }}" target="_blank">{{ video_url }}</a></p>
+                        {% if result.channel %}
+                        <p><strong>频道/UP主：</strong> {{ result.channel }}</p>
+                        {% endif %}
+                        <p><strong>视频类型：</strong> 
+                            {% if result.type == 1 %}
+                                普通视频
+                            {% elif result.type == 2 %}
+                                直播
+                            {% else %}
+                                未知类型
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                {% if result.video %}
+                <div class="mt-4">
+                    <h5 class="mb-3">视频播放</h5>
+                    <div class="ratio ratio-16x9">
+                        <video src="{{ result.video }}" controls class="rounded">
+                            您的浏览器不支持 HTML5 视频播放
+                        </video>
+                    </div>
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="{% url 'download_video' record.id %}" class="btn btn-primary">
+                            <i class="bi bi-play-circle me-2"></i>安全模式播放
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if result.avlist %}
+                <div class="mt-4">
+                    <h5 class="mb-3">分集列表</h5>
+                    <div class="list-group">
+                        {% for item in result.avlist %}
+                        <a href="{{ item.url }}" class="list-group-item list-group-item-action">
+                            {{ item.title }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="d-grid gap-2 mt-4">
+                    <a href="{% url 'index' %}" class="btn btn-primary">返回首页</a>
+                    {% if user.profile.points > 0 %}
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary">返回上一页</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

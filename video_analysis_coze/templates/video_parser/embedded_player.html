@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 自定义播放器样式 */
+    .video-container {
+        position: relative;
+        overflow: hidden;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .player-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        cursor: pointer;
+    }
+    
+    .play-button {
+        font-size: 3rem;
+        color: white;
+        opacity: 0.8;
+        transition: all 0.3s;
+    }
+    
+    .player-overlay:hover .play-button {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body">
+                <div id="videoContainer" class="ratio ratio-16x9 video-container">
+                    <!-- 使用iframe方式播放外部链接视频，避免直接嵌入视频链接 -->
+                    <div id="playerOverlay" class="player-overlay">
+                        <i class="bi bi-play-circle-fill play-button"></i>
+                    </div>
+                    <div id="playerContainer"></div>
+                </div>
+                
+                <div class="mt-4">
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">播放提示</h5>
+                        <ul class="mb-0">
+                            <li>点击播放按钮加载视频</li>
+                            <li>如果视频无法播放，请尝试以下方法：</li>
+                            <ul>
+                                <li><a href="#" id="directPlayLink" class="alert-link">尝试直接播放</a></li>
+                                <li><a href="{{ record.video_url }}" target="_blank" class="alert-link">前往原始视频网站</a></li>
+                            </ul>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 mt-4">
+                    <a href="{% url 'index' %}" class="btn btn-primary">返回首页</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 视频信息隐藏域，用于JavaScript获取 -->
+<input type="hidden" id="videoUrl" value="{{ video_url }}">
+<input type="hidden" id="videoTitle" value="{{ title }}">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const videoUrl = document.getElementById('videoUrl').value;
+        const videoTitle = document.getElementById('videoTitle').value;
+        const playerOverlay = document.getElementById('playerOverlay');
+        const playerContainer = document.getElementById('playerContainer');
+        const directPlayLink = document.getElementById('directPlayLink');
+        
+        // 初始化状态
+        let playerInitialized = false;
+        
+        // 点击播放按钮时加载视频
+        playerOverlay.addEventListener('click', function() {
+            loadVideoPlayer();
+        });
+        
+        // 直接播放链接
+        directPlayLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            loadDirectVideo();
+        });
+        
+        // 加载视频播放器
+        function loadVideoPlayer() {
+            if (playerInitialized) return;
+            
+            // 隐藏播放覆盖层
+            playerOverlay.style.display = 'none';
+            
+            try {
+                // 判断视频URL类型
+                if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+                    // YouTube 视频使用iframe嵌入
+                    const videoId = extractYouTubeId(videoUrl);
+                    if (videoId) {
+                        playerContainer.innerHTML = `
+                            <iframe src="https://www.youtube.com/embed/${videoId}" 
+                                title="${videoTitle}" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen
+                                class="ratio ratio-16x9">
+                            </iframe>
+                        `;
+                    } else {
+                        showError("无法识别YouTube视频ID");
+                    }
+                } else {
+                    // 普通视频使用video标签，但添加referrer策略
+                    playerContainer.innerHTML = `
+                        <video src="${videoUrl}" 
+                            controls 
+                            preload="metadata" 
+                            class="w-100 h-100" 
+                            controlsList="nodownload"
+                            referrerpolicy="no-referrer">
+                            您的浏览器不支持HTML5视频播放
+                        </video>
+                    `;
+                }
+                
+                playerInitialized = true;
+            } catch (error) {
+                console.error('加载播放器失败:', error);
+                showError("加载播放器时发生错误");
+            }
+        }
+        
+        // 直接在新窗口打开视频
+        function loadDirectVideo() {
+            // 使用blob URL方式打开，避免referer问题
+            fetch(videoUrl, {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-cache',
+                headers: {
+                    'Referer': '',
+                    'Origin': location.origin
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("资源获取失败");
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const blobUrl = URL.createObjectURL(blob);
+                window.open(blobUrl, '_blank');
+            })
+            .catch(error => {
+                console.error('直接播放失败:', error);
+                // 失败则尝试直接打开链接
+                window.open(videoUrl, '_blank');
+            });
+        }
+        
+        // 提取YouTube视频ID
+        function extractYouTubeId(url) {
+            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[7].length == 11) ? match[7] : null;
+        }
+        
+        // 显示错误信息
+        function showError(message) {
+            playerContainer.innerHTML = `
+                <div class="alert alert-danger m-3">
+                    <h5>播放失败</h5>
+                    <p>${message}</p>
+                    <p>请尝试访问原始视频网站</p>
+                </div>
+            `;
+            playerOverlay.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %} 

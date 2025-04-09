@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}视频解析网站 - 首页{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">视频解析</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'parse_video' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.video_url.id_for_label }}" class="form-label">{{ form.video_url.label }}</label>
+                        {{ form.video_url }}
+                        {% if form.video_url.errors %}
+                            <div class="text-danger">
+                                {% for error in form.video_url.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            {% if user.is_authenticated %}
+                                解析视频 (消耗1积分)
+                            {% else %}
+                                登录后解析
+                            {% endif %}
+                        </button>
+                    </div>
+                    {% if not user.is_authenticated %}
+                        <div class="alert alert-info mt-3">
+                            <i class="bi bi-info-circle me-2"></i>需要<a href="{% url 'login' %}">登录</a>才能使用解析功能。
+                            没有账号？<a href="{% url 'register' %}">立即注册</a>并获得10积分！
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mt-3">
+                            <i class="bi bi-info-circle me-2"></i>您当前有 {{ user.profile.points }} 积分，每次解析消耗1积分。
+                        </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header bg-secondary text-white">
+                <h4 class="mb-0">使用说明</h4>
+            </div>
+            <div class="card-body">
+                <ol>
+                    <li>支持解析B站、优酷、腾讯等主流视频平台</li>
+                    <li>每天首次登录可获得10积分奖励</li>
+                    <li>每次解析消耗1积分</li>
+                    <li>复制视频页面链接，粘贴到输入框中即可解析</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
